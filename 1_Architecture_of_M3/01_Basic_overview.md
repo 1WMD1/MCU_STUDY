@@ -69,8 +69,147 @@ MSR <special reg>, <reg> ;写入特殊寄存器
 
 ### 3.1 程序状态寄存器
 
+* 应用PSR(APSR) 
+* 执行PSR(EPSR)
+
+> 软件代码无法直接使用MRS/MSR直接访问
+
+* 中断PSR(IPSR)
+
+> 只读
+
+这三个通过一个组合寄存器访问，如下图所示：
+
+![image-20230314144425392](png/image-20230314144425392.png)
+
+![image-20230314144940393](png/image-20230314144940393.png)
+
+各种ARM架构之间的PSR是有略微的差别的，如下图所示展现出了不同架构的区别：
+
+![image-20230314145122831](png/image-20230314145122831.png)
+
+**使用方式**
+
+```c
+MRS r0 PSR ;读组合程序状态字
+MSR PSR,r0 ;写组合程序状态字
+
+单独访问：
+MRS r0,APSR ;将标志状态读入R0
+MRS r0,IPSR ;读取异常/中断状态
+MSR APSR，r0;写标志状态
+```
+
+#### 3.2.1 应用PSR(APSR) 
+
+> 重点提一提应用PSR(APSR) ，其他两种参考上面就可以；
+
+* 整数状态标志
+
+
+
+* Q状态标志
+
+
+
+* GE标志
+
+
+
+
+
 
 ### 3.2 PRIMASK,FAULTMASK和BASEPRI寄存器
+这三个寄存器全部用于异常与中断的屏蔽；
 
+![image-20230314151251439](png/image-20230314151251439.png)
+
+PRIMASK寄存器只有0位可以设置位的值，当设置为1使能时候，将屏蔽除不可屏蔽中断（NMI）和HardFault异常以外的所有异常；
+
+FAULTMASK寄存器类似上面并且还能屏蔽HardFault异常；
+
+BASEPRI可以允许用户设置更丰富的中断等级，以屏蔽相应的中断；
+
+**使用方式**
+
+```c
+提供C语言接口：
+x = _get_BASEPRI();//读BASEPRI寄存器
+x = _get_PRIMASK();//读PRIMASK寄存器
+x = _get_FAULTMASK();//读FAULTMASK寄存器
+
+_set_BASEPRI(x);//设置BASEPRI寄存器
+_set_PRIMASK(x);//设置PRIMASK寄存器
+_set_FAULTMASK(x);//设置FAULTMASK寄存器
+
+_disable_irq();//设置PRIMASK寄存器,禁止IRQ
+_enable_irq();//设置PRIMASK寄存器,使能IRQ
+
+汇编：
+MRS r0,BASEPRI; //后面不再解释，读
+MSR r0,PRIMASK;
+MSR r0,FAULTMASK;
+
+MSR BASEPRI,r0;//后面不在解释，写
+MSR PRIMASK,r0;
+MSR FAULTMASK,r0;
+    
+CPS:修改处理器状态指令    
+CPSIE i;使能中断（清除PRIMASR）
+CPSID i;禁止中断（设置PRIMASR）
+CPSIE f;使能中断（清除FAULTMASK）
+CPSID f;禁止中断（设置FAULTMASK）
+
+```
 ### 3.3 CONTROL寄存器
+作用
 
+* 选择栈指针（主栈指针/进程栈指针）
+* 线程模式的访问等级（特权/非特权）
+
+下图是不同架构的CONTROL寄存器：
+
+![image-20230314154635843](png/image-20230314154635843.png)
+
+![image-20230314154611106](png/image-20230314154611106.png)
+
+当复位以后，寄存器的数值默认为0，也就代表着处理器处于线程模式，具备特权，使用主栈指针；
+
+![image-20230314155249542](png/image-20230314155249542.png)
+
+运行在非特权模式下是无法自己切回特权模式下的，想要切回去必须使用异常机制，这就提供了一个基本的安全模型；如下面两图：
+
+
+
+![image-20230314155524670](png/image-20230314155524670.png)
+
+
+
+
+
+![image-20230314155546420](png/image-20230314155546420.png)
+
+**使用方式**
+
+四种组合
+
+![image-20230314160022436](png/image-20230314160022436.png)
+
+在没有使用OS的简单应用中，一般不修改CONTROL，让CPU一直在下面模式下运行就行。
+
+![image-20230314160126437](png/image-20230314160126437.png)
+
+```c
+c语言接口：
+x = _get_CONTROL();//读取寄存器当前值
+_set_CONTROL(x);//设置寄存器的数值
+
+汇编：
+MRS r0,control;
+MSR CONTROL,r0;
+```
+
+
+### 3.4 浮点寄存器
+
+* 该寄存器M3架构没有,M4架构存在，这里暂时不讲；
